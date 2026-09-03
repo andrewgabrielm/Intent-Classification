@@ -1,0 +1,19 @@
+# Core data / NLP stack
+pandas==3.0.5
+numpy==2.4.6
+scikit-learn==1.9.0
+matplotlib==3.11.1
+seaborn==0.13.2
+nltk==3.10.3
+
+# Semantic embeddings
+sentence-transformers==6.0.0
+torch==2.13.0
+
+# Model persistence and app
+joblib==1.5.3
+streamlit==1.61.1
+
+# Notebook environment
+jupyterlab==4.6.3
+notebook==7.6.2
