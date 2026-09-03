@@ -73,7 +73,15 @@ PROBABILITY_THRESHOLD = config.get(
 
 SVM_MARGIN_THRESHOLD = config.get(
     "svm_margin_threshold",
-    0.10
+    0.30
+)
+
+# A negative top score means no one-vs-rest classifier claimed the query, which
+# on the validation split corresponds to ~61% accuracy versus ~97% for positive
+# scores. Both thresholds are tuned in Notebook 05.
+SVM_REQUIRE_POSITIVE_SCORE = config.get(
+    "svm_require_positive_score",
+    True
 )
 
 
@@ -264,7 +272,16 @@ def predict_intent(text):
         second_score
     )
 
-    if margin < SVM_MARGIN_THRESHOLD:
+    weak_score = (
+        SVM_REQUIRE_POSITIVE_SCORE
+        and top_score <= 0
+    )
+
+    narrow_margin = (
+        margin < SVM_MARGIN_THRESHOLD
+    )
+
+    if weak_score or narrow_margin:
 
         status = "Ambiguous prediction"
 
@@ -407,14 +424,25 @@ if predict_button:
 
             if result["status"] == "Ambiguous prediction":
 
-                st.warning(
-                    "The model is uncertain between "
-                    "multiple intents."
-                )
+                if result["score"] <= 0:
+
+                    st.warning(
+                        "Low confidence: this query does not clearly match "
+                        "any of the 77 known intents. Treat the prediction "
+                        "below as a suggestion only."
+                    )
+
+                else:
+
+                    st.warning(
+                        "Low confidence: the model cannot clearly separate "
+                        "the top two intents."
+                    )
 
                 st.write(
                     f"Possible alternative: "
-                    f"`{result['second_intent']}`"
+                    f"`{result['second_intent']}` "
+                    f"({result['second_score']:.4f})"
                 )
 
             else:

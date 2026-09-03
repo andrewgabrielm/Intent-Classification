@@ -25,7 +25,37 @@ Note on step 4: tokenization is not redundant after step 2. NLTK splits
 
 import re
 
+import nltk
 from nltk.tokenize import word_tokenize
+
+
+def _ensure_tokenizer_data():
+    """Make sure the NLTK tokenizer models are available.
+
+    Notebook 01 downloads these explicitly, but the Streamlit app runs on
+    machines that have never executed a notebook (a fresh deployment, for
+    example). Without this, the first query raises LookupError. The check is
+    cheap and a no-op once the data is present.
+    """
+
+    for resource in ("punkt_tab", "punkt"):
+
+        try:
+            nltk.data.find(f"tokenizers/{resource}")
+
+        except LookupError:
+
+            try:
+                nltk.download(resource, quiet=True)
+
+            except Exception:
+                # Offline with the data already cached elsewhere, or a
+                # transient failure; word_tokenize will raise a clear error
+                # if the resource is genuinely unusable.
+                pass
+
+
+_ensure_tokenizer_data()
 
 
 def preprocess_text(text):

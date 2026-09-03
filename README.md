@@ -181,12 +181,25 @@ trust it, which differs by model family:
   probability and flag anything below **0.60** as low confidence.
 - **Margin models** (Linear SVM, the current default) have no probability
   estimate, so they report the raw decision score and the **top-2 margin** —
-  the gap between the best and second-best intent. A margin below **0.10** is
-  flagged as ambiguous, with the runner-up intent shown alongside.
+  the gap between the best and second-best intent.
 
-The margin flag is what makes the model safe to deploy against 77 closely
-related classes: a vague query like "I need help with something" produces a
-margin of 0.027 and is surfaced as uncertain rather than answered confidently.
+A margin-model prediction is shown as confident only when **both** hold:
+
+| Signal | Requirement | Why |
+|---|---|---|
+| Top decision score | must be **> 0** | A negative score means no one-vs-rest classifier claimed the query — the winner is merely the least-rejected intent. On validation these are only **60.7%** accurate, versus **96.8%** for positive scores. |
+| Top-2 margin | must exceed **0.30** | A small gap means the model cannot separate its two best guesses. |
+
+Both thresholds are tuned in notebook 05 **on the validation split**, by taking
+the smallest margin on a grid whose confident predictions reach 97.5% accuracy.
+Tuning them on the test set would reintroduce the selection bias the pipeline
+is built to avoid.
+
+This gate flags ~14% of queries as uncertain and catches **72% of all errors**;
+predictions shown as confident are **97.6%** accurate on validation, up from
+93.9% under a naive margin-only rule. A vague query like "I need help with
+something" (score −0.84, margin 0.027) is surfaced as uncertain rather than
+answered confidently.
 
 Queries containing no ASCII letters (`12345`, `!!!`, or non-Latin script)
 reduce to an empty string under preprocessing and are rejected before reaching
